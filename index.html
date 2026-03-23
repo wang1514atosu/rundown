@@ -179,7 +179,7 @@
   #add-row-btn:hover { border-color: var(--accent); color: var(--accent2); background: rgba(187,0,0,.05); }
 
   /* ─── TELEPROMPTER VIEW ─── */
-  #teleprompter-view { background: #000; position: relative; }
+  #teleprompter-view { background: #000; position: relative; display: flex; flex-direction: column; }
   #tp-controls {
     position: absolute; top: 0; left: 0; right: 0; z-index: 20;
     display: flex; align-items: center; gap: 16px; padding: 12px 20px;
@@ -217,6 +217,18 @@
   #tp-hint {
     font-family: var(--mono); font-size: 10px; color: #333;
     position: absolute; bottom: 16px; right: 20px; text-align: right; line-height: 1.8;
+  }
+  #tp-kb-hint {
+    display: flex; align-items: center; justify-content: center; gap: 24px;
+    padding: 5px 20px; background: rgba(0,0,0,.85);
+    border-top: 1px solid #1a1a1a; flex-shrink: 0;
+    font-family: var(--mono); font-size: 10px; color: #444;
+    letter-spacing: .04em;
+  }
+  #tp-kb-hint kbd {
+    display: inline-block; background: #1c1c1c; border: 1px solid #333;
+    border-radius: 3px; padding: 0 5px; font-family: var(--mono);
+    font-size: 10px; color: #666; margin: 0 2px; line-height: 1.6;
   }
   #tp-scroll-area { flex: 1; overflow: hidden; padding: 80px 10%; position: relative; }
   #tp-content { font-family: 'IBM Plex Sans', sans-serif; font-size: 42px; font-weight: 400; line-height: 1.5; color: #fff; white-space: pre-wrap; transition: font-size .2s; text-transform: uppercase; }
@@ -402,7 +414,7 @@
       </div>
       <div id="tp-font-size-wrap">
         <span class="tp-speed-label">SIZE</span>
-        <input type="range" id="tp-font-size" min="24" max="80" step="2" value="42" oninput="document.getElementById('tp-content').style.fontSize=this.value+'px'"/>
+        <input type="range" id="tp-font-size" min="16" max="120" step="2" value="42" oninput="document.getElementById('tp-content').style.fontSize=this.value+'px'"/>
       </div>
       <span class="tp-seg-indicator" id="tp-seg-indicator"></span>
     </div>
@@ -410,6 +422,13 @@
       <div id="tp-mirror-line"></div>
       <div id="tp-cursor"></div>
       <div id="tp-content"></div>
+    </div>
+    <div id="tp-kb-hint">
+      <span><kbd>SPACE</kbd> play / pause</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> speed</span>
+      <span><kbd>←</kbd><kbd>→</kbd> font size</span>
+      <span><kbd>[</kbd><kbd>]</kbd> prev / next segment</span>
+      <span><kbd>+</kbd><kbd>−</kbd> speed</span>
     </div>
   </div>
 
@@ -803,6 +822,13 @@ function nudgeSpeed(delta) {
   updateSpeedDisplay();
 }
 
+function nudgeFontSize(delta) {
+  const slider = document.getElementById('tp-font-size');
+  const newVal = Math.min(120, Math.max(16, parseInt(slider.value) + delta));
+  slider.value = newVal;
+  document.getElementById('tp-content').style.fontSize = newVal + 'px';
+}
+
 function updateSpeedDisplay() {
   const val = parseFloat(document.getElementById('tp-speed').value).toFixed(1);
   document.getElementById('tp-speed-display').textContent = val;
@@ -849,8 +875,10 @@ document.addEventListener('keydown', e => {
   if (tpActive && !inInput) {
     if (e.key === 'ArrowUp')    { e.preventDefault(); nudgeSpeed(0.2); }
     if (e.key === 'ArrowDown')  { e.preventDefault(); nudgeSpeed(-0.2); }
-    if (e.key === 'ArrowLeft')  { e.preventDefault(); tpNavSeg(-1); }
-    if (e.key === 'ArrowRight') { e.preventDefault(); tpNavSeg(1); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); nudgeFontSize(-2); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); nudgeFontSize(2); }
+    if (e.key === '[') { e.preventDefault(); tpNavSeg(-1); }
+    if (e.key === ']') { e.preventDefault(); tpNavSeg(1); }
     if (e.key === '+' || e.key === '=') { e.preventDefault(); nudgeSpeed(0.2); }
     if (e.key === '-')                  { e.preventDefault(); nudgeSpeed(-0.2); }
   }
