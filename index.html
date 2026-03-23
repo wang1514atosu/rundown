@@ -21,7 +21,7 @@
     --blue: #3b82f6;
     --mono: 'IBM Plex Mono', monospace;
     --sans: 'IBM Plex Sans', sans-serif;
-    --row-h: 52px;
+    --row-h: 24px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--sans); background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -29,7 +29,7 @@
   /* TOP BAR */
   #topbar {
     display: flex; align-items: center; gap: 16px;
-    padding: 0 20px; height: 52px; min-height: 52px;
+    padding: 0 14px; height: 38px; min-height: 38px;
     background: var(--surface); border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
@@ -43,14 +43,14 @@
   .show-title-input:focus { border-bottom-color: var(--border2); }
   .spacer { flex: 1; }
   .nav-btn {
-    padding: 6px 14px; border-radius: 5px; font-size: 12px; font-family: var(--mono);
+    padding: 4px 10px; border-radius: 4px; font-size: 11px; font-family: var(--mono);
     font-weight: 500; cursor: pointer; transition: all .15s; border: 1px solid var(--border2);
     background: transparent; color: var(--muted); letter-spacing: .03em;
   }
   .nav-btn:hover { background: var(--surface2); color: var(--text); }
   .nav-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
   #on-air-btn {
-    padding: 6px 16px; border-radius: 5px; font-size: 12px; font-family: var(--mono);
+    padding: 4px 12px; border-radius: 4px; font-size: 11px; font-family: var(--mono);
     font-weight: 600; cursor: pointer; border: none; letter-spacing: .06em;
     background: var(--accent); color: #fff; transition: all .15s;
   }
@@ -60,13 +60,13 @@
   /* TIMING BAR */
   #timingbar {
     display: flex; align-items: center; gap: 24px;
-    padding: 0 20px; height: 40px; min-height: 40px;
+    padding: 0 14px; height: 30px; min-height: 30px;
     background: var(--surface2); border-bottom: 1px solid var(--border);
-    flex-shrink: 0; font-family: var(--mono); font-size: 12px;
+    flex-shrink: 0; font-family: var(--mono); font-size: 11px; gap: 18px;
   }
-  .time-block { display: flex; align-items: center; gap: 8px; }
-  .time-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
-  .time-val { color: var(--text); font-size: 14px; font-weight: 600; min-width: 60px; }
+  .time-block { display: flex; align-items: center; gap: 6px; }
+  .time-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; }
+  .time-val { color: var(--text); font-size: 12px; font-weight: 600; min-width: 44px; }
   .time-val.running { color: var(--green); }
   .time-val.over { color: var(--accent2); }
   #progress-wrap { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
@@ -85,16 +85,16 @@
     display: flex; flex-direction: column; overflow: hidden;
   }
   .script-header {
-    padding: 12px 16px; border-bottom: 1px solid var(--border);
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    padding: 6px 10px; border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
     text-transform: uppercase; letter-spacing: .07em; flex-shrink: 0;
     display: flex; align-items: center; justify-content: space-between;
   }
-  #script-seg-name { color: var(--text); font-size: 12px; }
+  #script-seg-name { color: var(--text); font-size: 11px; }
   #script-editor {
-    flex: 1; padding: 16px; resize: none; background: transparent;
+    flex: 1; padding: 10px; resize: none; background: transparent;
     border: none; outline: none; color: var(--text); font-family: var(--sans);
-    font-size: 14px; line-height: 1.7; overflow-y: auto;
+    font-size: 13px; line-height: 1.5; overflow-y: auto;
   }
   #script-editor::placeholder { color: var(--muted); }
 
@@ -102,7 +102,7 @@
   .rd-header {
     display: grid;
     grid-template-columns: 36px 36px 180px 90px 70px 70px 70px 1fr;
-    gap: 0; padding: 0 16px; height: 34px; align-items: center;
+    gap: 0; padding: 0 10px; height: 22px; align-items: center;
     border-bottom: 1px solid var(--border);
     font-family: var(--mono); font-size: 10px; text-transform: uppercase;
     letter-spacing: .07em; color: var(--muted); flex-shrink: 0; position: sticky; top: 0;
@@ -113,8 +113,8 @@
   .seg-row {
     display: grid;
     grid-template-columns: 36px 36px 180px 90px 70px 70px 70px 1fr;
-    gap: 0; padding: 0 16px; min-height: var(--row-h); align-items: center;
-    border-bottom: 1px solid var(--border); cursor: pointer;
+    gap: 0; padding: 0 10px; min-height: var(--row-h); align-items: center;
+    border-bottom: 1px solid rgba(42,45,53,0.5); cursor: pointer;
     transition: background .1s; position: relative;
   }
   .seg-row:hover { background: var(--surface2); }
@@ -124,8 +124,8 @@
 
   .seg-num { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .seg-type-badge {
-    width: 24px; height: 24px; border-radius: 4px; display: flex;
-    align-items: center; justify-content: center; font-size: 9px;
+    width: 18px; height: 18px; border-radius: 3px; display: flex;
+    align-items: center; justify-content: center; font-size: 8px;
     font-family: var(--mono); font-weight: 600; letter-spacing: .02em;
   }
   .badge-pkg  { background: rgba(59,130,246,.2);  color: #93c5fd; }
@@ -135,28 +135,28 @@
   .badge-wx   { background: rgba(6,182,212,.2);   color: #67e8f9; }
   .badge-brk  { background: rgba(107,114,128,.2); color: #9ca3af; }
 
-  .seg-slug { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+  .seg-slug { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 6px; }
   .seg-slug-input {
     background: transparent; border: none; outline: none; font-family: var(--sans);
-    font-size: 13px; font-weight: 500; color: var(--text); width: 100%;
-    padding-right: 8px;
+    font-size: 12px; font-weight: 500; color: var(--text); width: 100%;
+    padding-right: 6px;
   }
   .seg-dur, .seg-front, .seg-back {
-    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
   }
   .seg-dur input {
     background: transparent; border: none; outline: none;
-    font-family: var(--mono); font-size: 12px; color: var(--text);
-    width: 56px; text-align: right;
+    font-family: var(--mono); font-size: 11px; color: var(--text);
+    width: 50px; text-align: right;
   }
   .seg-dur input:focus { border-bottom: 1px solid var(--border2); }
   .seg-front, .seg-back { text-align: right; }
-  .seg-note-cell { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; display: flex; align-items: center; gap: 6px; }
+  .seg-note-cell { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 6px; display: flex; align-items: center; gap: 4px; }
   .seg-note-text { overflow: hidden; text-overflow: ellipsis; flex: 1; }
   .seg-del-btn {
-    opacity: 0; flex-shrink: 0; width: 22px; height: 22px; border-radius: 4px;
+    opacity: 0; flex-shrink: 0; width: 18px; height: 18px; border-radius: 3px;
     border: 1px solid transparent; background: transparent; cursor: pointer;
-    color: var(--muted); font-size: 13px; display: flex; align-items: center;
+    color: var(--muted); font-size: 11px; display: flex; align-items: center;
     justify-content: center; transition: all .15s; line-height: 1;
   }
   .seg-row:hover .seg-del-btn { opacity: 1; }
@@ -171,9 +171,9 @@
 
   /* ADD ROW BUTTON */
   #add-row-btn {
-    margin: 12px 16px; padding: 10px; border: 1px dashed var(--border2);
-    border-radius: 6px; background: transparent; color: var(--muted);
-    font-family: var(--mono); font-size: 12px; cursor: pointer;
+    margin: 4px 10px; padding: 5px; border: 1px dashed var(--border2);
+    border-radius: 4px; background: transparent; color: var(--muted);
+    font-family: var(--mono); font-size: 11px; cursor: pointer;
     transition: all .15s; text-align: center; letter-spacing: .04em;
   }
   #add-row-btn:hover { border-color: var(--accent); color: var(--accent2); background: rgba(187,0,0,.05); }
@@ -224,7 +224,18 @@
     font-family: var(--mono); font-size: .5em; color: var(--accent2);
     display: block; margin-bottom: .25em; margin-top: 1.5em; text-transform: uppercase; letter-spacing: .1em;
   }
-  .tp-seg-block { margin-bottom: 3em; }
+  #tp-content .tp-seg-type[data-type="PKG"] { background: rgba(59,130,246,.3);  color: #93c5fd; }
+  #tp-content .tp-seg-type[data-type="LIVE"]{ background: rgba(34,197,94,.3);   color: #86efac; }
+  #tp-content .tp-seg-type[data-type="VO"]  { background: rgba(245,158,11,.3);  color: #fcd34d; }
+  #tp-content .tp-seg-type[data-type="SOT"] { background: rgba(139,92,246,.3);  color: #c4b5fd; }
+  #tp-content .tp-seg-type[data-type="WX"]  { background: rgba(6,182,212,.3);   color: #67e8f9; }
+  #tp-content .tp-seg-type[data-type="BRK"] { background: rgba(107,114,128,.3); color: #9ca3af; }
+  #tp-content .tp-seg-type {
+    display: inline-block; font-size: .85em; padding: 1px 6px; border-radius: 3px;
+    margin-right: 6px; letter-spacing: .08em; vertical-align: middle;
+    background: rgba(187,0,0,.3); color: #fca5a5;
+  }
+  .tp-seg-block { margin-bottom: 0.6em; }
   #tp-cursor {
     position: absolute; left: 0; right: 0; top: 50%; height: 3px;
     background: rgba(232,35,26,.5); pointer-events: none;
@@ -399,7 +410,6 @@
       <div id="tp-mirror-line"></div>
       <div id="tp-cursor"></div>
       <div id="tp-content"></div>
-      <div id="tp-hint">SCROLL WHEEL · speed&nbsp;&nbsp;↑ / ↓ · faster / slower&nbsp;&nbsp;← / → · prev / next segment&nbsp;&nbsp;SPACE · play/pause</div>
     </div>
   </div>
 
@@ -715,7 +725,7 @@ function updateTPContent() {
 
   // Render ALL scripted segments continuously, each with a data-seg-idx attribute
   content.innerHTML = scripted.map((s, i) =>
-    `<div class="tp-seg-block" data-seg-idx="${i}"><span class="tp-seg-title">${escHtml(s.slug)}</span>${escHtml(s.script)}</div>`
+    `<div class="tp-seg-block" data-seg-idx="${i}"><span class="tp-seg-title"><span class="tp-seg-type" data-type="${escHtml(s.type)}">${escHtml(s.type)}</span> ${escHtml(s.slug)}</span>${escHtml(s.script)}</div>`
   ).join('');
 
   counter.textContent = `1 / ${scripted.length}  ·  ${escHtml(scripted[0].slug)}`;
