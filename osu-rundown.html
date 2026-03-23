@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OSU Rundown Creator</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d0e11;
+    --surface: #16181d;
+    --surface2: #1e2128;
+    --border: #2a2d35;
+    --border2: #353840;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #bb0000; /* OSU scarlet */
+    --accent2: #e8231a;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --blue: #3b82f6;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --row-h: 52px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* TOP BAR */
+  #topbar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 20px; height: 52px; min-height: 52px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .logo { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent2); letter-spacing: 0.05em; white-space: nowrap; }
+  .show-title-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text);
+    border-bottom: 1px solid transparent; transition: border-color .2s;
+    max-width: 320px;
+  }
+  .show-title-input:focus { border-bottom-color: var(--border2); }
+  .spacer { flex: 1; }
+  .nav-btn {
+    padding: 6px 14px; border-radius: 5px; font-size: 12px; font-family: var(--mono);
+    font-weight: 500; cursor: pointer; transition: all .15s; border: 1px solid var(--border2);
+    background: transparent; color: var(--muted); letter-spacing: .03em;
+  }
+  .nav-btn:hover { background: var(--surface2); color: var(--text); }
+  .nav-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #on-air-btn {
+    padding: 6px 16px; border-radius: 5px; font-size: 12px; font-family: var(--mono);
+    font-weight: 600; cursor: pointer; border: none; letter-spacing: .06em;
+    background: var(--accent); color: #fff; transition: all .15s;
+  }
+  #on-air-btn.live { background: var(--accent2); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.75} }
+
+  /* TIMING BAR */
+  #timingbar {
+    display: flex; align-items: center; gap: 24px;
+    padding: 0 20px; height: 40px; min-height: 40px;
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+    flex-shrink: 0; font-family: var(--mono); font-size: 12px;
+  }
+  .time-block { display: flex; align-items: center; gap: 8px; }
+  .time-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+  .time-val { color: var(--text); font-size: 14px; font-weight: 600; min-width: 60px; }
+  .time-val.running { color: var(--green); }
+  .time-val.over { color: var(--accent2); }
+  #progress-wrap { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  #progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width .5s linear; width: 0%; }
+
+  /* VIEWS */
+  #views { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .view { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+  .view.active { display: flex; }
+
+  /* ─── RUNDOWN VIEW ─── */
+  #rundown-view { flex-direction: row; }
+  #rundown-panel { flex: 1; overflow-y: auto; overflow-x: hidden; }
+  #script-panel {
+    width: 340px; min-width: 340px; border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .script-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .07em; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  #script-seg-name { color: var(--text); font-size: 12px; }
+  #script-editor {
+    flex: 1; padding: 16px; resize: none; background: transparent;
+    border: none; outline: none; color: var(--text); font-family: var(--sans);
+    font-size: 14px; line-height: 1.7; overflow-y: auto;
+  }
+  #script-editor::placeholder { color: var(--muted); }
+
+  /* RUNDOWN TABLE HEADER */
+  .rd-header {
+    display: grid;
+    grid-template-columns: 36px 36px 180px 90px 70px 70px 70px 1fr;
+    gap: 0; padding: 0 16px; height: 34px; align-items: center;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--muted); flex-shrink: 0; position: sticky; top: 0;
+    background: var(--surface); z-index: 10;
+  }
+
+  /* SEGMENT ROWS */
+  .seg-row {
+    display: grid;
+    grid-template-columns: 36px 36px 180px 90px 70px 70px 70px 1fr;
+    gap: 0; padding: 0 16px; min-height: var(--row-h); align-items: center;
+    border-bottom: 1px solid var(--border); cursor: pointer;
+    transition: background .1s; position: relative;
+  }
+  .seg-row:hover { background: var(--surface2); }
+  .seg-row.selected { background: rgba(187,0,0,.12); border-left: 2px solid var(--accent); }
+  .seg-row.on-air-row { background: rgba(232,35,26,.1); }
+  .seg-row.on-air-row .seg-slug { color: var(--accent2); }
+
+  .seg-num { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .seg-type-badge {
+    width: 24px; height: 24px; border-radius: 4px; display: flex;
+    align-items: center; justify-content: center; font-size: 9px;
+    font-family: var(--mono); font-weight: 600; letter-spacing: .02em;
+  }
+  .badge-pkg  { background: rgba(59,130,246,.2);  color: #93c5fd; }
+  .badge-live { background: rgba(34,197,94,.2);   color: #86efac; }
+  .badge-vo   { background: rgba(245,158,11,.2);  color: #fcd34d; }
+  .badge-sot  { background: rgba(139,92,246,.2);  color: #c4b5fd; }
+  .badge-wx   { background: rgba(6,182,212,.2);   color: #67e8f9; }
+  .badge-brk  { background: rgba(107,114,128,.2); color: #9ca3af; }
+
+  .seg-slug { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+  .seg-slug-input {
+    background: transparent; border: none; outline: none; font-family: var(--sans);
+    font-size: 13px; font-weight: 500; color: var(--text); width: 100%;
+    padding-right: 8px;
+  }
+  .seg-dur, .seg-front, .seg-back {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+  .seg-dur input {
+    background: transparent; border: none; outline: none;
+    font-family: var(--mono); font-size: 12px; color: var(--text);
+    width: 56px; text-align: right;
+  }
+  .seg-dur input:focus { border-bottom: 1px solid var(--border2); }
+  .seg-front, .seg-back { text-align: right; }
+  .seg-note-cell { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; display: flex; align-items: center; gap: 6px; }
+  .seg-note-text { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  .seg-del-btn {
+    opacity: 0; flex-shrink: 0; width: 22px; height: 22px; border-radius: 4px;
+    border: 1px solid transparent; background: transparent; cursor: pointer;
+    color: var(--muted); font-size: 13px; display: flex; align-items: center;
+    justify-content: center; transition: all .15s; line-height: 1;
+  }
+  .seg-row:hover .seg-del-btn { opacity: 1; }
+  .seg-del-btn:hover { background: rgba(232,35,26,.15); border-color: rgba(232,35,26,.3); color: var(--accent2); }
+
+  .type-select {
+    background: transparent; border: none; outline: none;
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    color: inherit; cursor: pointer; width: 24px; text-align: center;
+    -webkit-appearance: none; padding: 0;
+  }
+
+  /* ADD ROW BUTTON */
+  #add-row-btn {
+    margin: 12px 16px; padding: 10px; border: 1px dashed var(--border2);
+    border-radius: 6px; background: transparent; color: var(--muted);
+    font-family: var(--mono); font-size: 12px; cursor: pointer;
+    transition: all .15s; text-align: center; letter-spacing: .04em;
+  }
+  #add-row-btn:hover { border-color: var(--accent); color: var(--accent2); background: rgba(187,0,0,.05); }
+
+  /* ─── TELEPROMPTER VIEW ─── */
+  #teleprompter-view { background: #000; position: relative; }
+  #tp-controls {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 20;
+    display: flex; align-items: center; gap: 16px; padding: 12px 20px;
+    background: linear-gradient(to bottom, rgba(0,0,0,.9) 60%, transparent);
+  }
+  .tp-btn {
+    padding: 6px 16px; border-radius: 4px; font-family: var(--mono); font-size: 12px;
+    font-weight: 500; cursor: pointer; border: 1px solid #333; background: #111; color: #aaa;
+    transition: all .15s;
+  }
+  .tp-btn:hover { background: #222; color: #fff; }
+  .tp-btn.running { background: var(--green); border-color: var(--green); color: #000; }
+  .tp-speed-wrap { display: flex; align-items: center; gap: 8px; }
+  .tp-speed-label { font-family: var(--mono); font-size: 11px; color: #555; }
+  #tp-speed { width: 80px; accent-color: var(--accent2); }
+  #tp-font-size-wrap { display: flex; align-items: center; gap: 8px; }
+  #tp-font-size { width: 60px; accent-color: var(--accent2); }
+  .tp-seg-indicator {
+    font-family: var(--mono); font-size: 11px; color: #444; margin-left: auto;
+  }
+  #tp-speed-display {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    color: #fff; min-width: 36px; text-align: center;
+  }
+  #tp-speed-bump {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .tp-bump-btn {
+    width: 20px; height: 14px; background: #222; border: 1px solid #333;
+    color: #888; font-size: 9px; cursor: pointer; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+    transition: all .1s; padding: 0;
+  }
+  .tp-bump-btn:hover { background: #333; color: #fff; }
+  #tp-hint {
+    font-family: var(--mono); font-size: 10px; color: #333;
+    position: absolute; bottom: 16px; right: 20px; text-align: right; line-height: 1.8;
+  }
+  #tp-scroll-area { flex: 1; overflow: hidden; padding: 80px 10%; position: relative; }
+  #tp-content { font-family: 'IBM Plex Sans', sans-serif; font-size: 42px; font-weight: 400; line-height: 1.5; color: #fff; white-space: pre-wrap; transition: font-size .2s; text-transform: uppercase; }
+  #tp-content .tp-seg-title {
+    font-family: var(--mono); font-size: .5em; color: var(--accent2);
+    display: block; margin-bottom: .25em; margin-top: 1.5em; text-transform: uppercase; letter-spacing: .1em;
+  }
+  .tp-seg-block { margin-bottom: 3em; }
+  #tp-cursor {
+    position: absolute; left: 0; right: 0; top: 50%; height: 3px;
+    background: rgba(232,35,26,.5); pointer-events: none;
+  }
+  #tp-mirror-line {
+    position: absolute; left: 0; right: 0; top: 50%;
+    transform: translateY(-1.5em);
+    border-top: 1px solid rgba(255,255,255,.07); pointer-events: none;
+  }
+
+  /* ─── TIMER VIEW ─── */
+  #timer-view {
+    align-items: center; justify-content: center;
+    background: var(--bg); flex-direction: column; gap: 32px;
+  }
+  #big-clock {
+    font-family: var(--mono); font-size: clamp(80px, 14vw, 160px);
+    font-weight: 600; color: var(--text); letter-spacing: -.02em; line-height: 1;
+    transition: color .3s;
+  }
+  #big-clock.over { color: var(--accent2); }
+  #seg-info-block { text-align: center; }
+  #current-seg-label { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  #current-seg-name { font-size: 22px; font-weight: 500; color: var(--text); }
+  #seg-progress-bar-wrap { width: 360px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 12px; }
+  #seg-progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width .5s linear; }
+  #timer-controls { display: flex; gap: 12px; }
+  .timer-ctl-btn {
+    padding: 12px 28px; border-radius: 6px; font-family: var(--mono); font-size: 13px;
+    font-weight: 600; cursor: pointer; border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text); letter-spacing: .06em;
+    transition: all .15s;
+  }
+  .timer-ctl-btn:hover { background: var(--surface); }
+  .timer-ctl-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .timer-ctl-btn.primary:hover { background: var(--accent2); }
+  #seg-queue { display: flex; flex-direction: column; gap: 6px; width: 360px; }
+  .queue-item {
+    display: flex; align-items: center; gap: 12px; padding: 8px 12px;
+    border-radius: 5px; background: var(--surface); border: 1px solid var(--border);
+    font-size: 13px; opacity: .5; transition: opacity .2s;
+  }
+  .queue-item.next { opacity: 1; border-color: var(--border2); }
+  .queue-item .q-num { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 20px; }
+  .queue-item .q-slug { flex: 1; }
+  .queue-item .q-dur { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* drag handle */
+  .drag-handle { cursor: grab; color: var(--border2); font-size: 14px; user-select: none; }
+  .drag-handle:hover { color: var(--muted); }
+  .seg-row.dragging { opacity: .4; }
+  .seg-row.drag-over { border-top: 2px solid var(--accent); }
+
+  #empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 60px 20px; color: var(--muted); font-family: var(--mono); font-size: 13px; gap: 12px;
+  }
+  .empty-icon { font-size: 32px; opacity: .3; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="logo">⬛ RUNDOWN</div>
+  <input class="show-title-input" id="show-title" value="6PM NEWSCAST — WOSU" spellcheck="false"/>
+  <div class="spacer"></div>
+  <button class="nav-btn active" onclick="switchView('rundown')">RUNDOWN</button>
+  <button class="nav-btn" onclick="switchView('timer')">TIMER</button>
+  <button class="nav-btn" onclick="switchView('teleprompter')">PROMPTER</button>
+  <button id="on-air-btn" onclick="toggleOnAir()">● ON AIR</button>
+</div>
+
+<!-- TIMING BAR -->
+<div id="timingbar">
+  <div class="time-block">
+    <span class="time-label">Show time</span>
+    <span class="time-val" id="tb-show-elapsed">0:00</span>
+  </div>
+  <div class="time-block">
+    <span class="time-label">Planned</span>
+    <span class="time-val" id="tb-planned">0:00</span>
+  </div>
+  <div class="time-block">
+    <span class="time-label">Remaining</span>
+    <span class="time-val" id="tb-remaining">0:00</span>
+  </div>
+  <div class="time-block">
+    <span class="time-label">Current seg</span>
+    <span class="time-val" id="tb-seg">—</span>
+  </div>
+  <div id="progress-wrap"><div id="progress-bar"></div></div>
+  <div class="time-block">
+    <span class="time-label">Clock</span>
+    <span class="time-val" id="tb-clock">—</span>
+  </div>
+</div>
+
+<!-- VIEWS -->
+<div id="views">
+
+  <!-- RUNDOWN VIEW -->
+  <div id="rundown-view" class="view active">
+    <div id="rundown-panel">
+      <div class="rd-header">
+        <span></span>
+        <span></span>
+        <span>SLUG</span>
+        <span>TYPE</span>
+        <span style="text-align:right">DUR</span>
+        <span style="text-align:right">FRONT</span>
+        <span style="text-align:right">BACK</span>
+        <span style="padding-left:8px">NOTE</span>
+      </div>
+      <div id="seg-list"></div>
+      <button id="add-row-btn" onclick="addSegment()">+ ADD SEGMENT</button>
+    </div>
+    <div id="script-panel">
+      <div class="script-header">
+        <span>SCRIPT</span>
+        <span id="script-seg-name">— select a segment —</span>
+      </div>
+      <textarea id="script-editor" placeholder="Select a segment to write or edit its script…"></textarea>
+    </div>
+  </div>
+
+  <!-- TIMER VIEW -->
+  <div id="timer-view" class="view">
+    <div id="seg-info-block">
+      <div id="current-seg-label">NOW PLAYING</div>
+      <div id="current-seg-name">—</div>
+      <div id="seg-progress-bar-wrap"><div id="seg-progress-bar" style="width:0%"></div></div>
+    </div>
+    <div id="big-clock">0:00</div>
+    <div id="timer-controls">
+      <button class="timer-ctl-btn" onclick="prevSeg()">◀ PREV</button>
+      <button class="timer-ctl-btn primary" id="timer-play-btn" onclick="toggleTimer()">▶ START</button>
+      <button class="timer-ctl-btn" onclick="nextSeg()">NEXT ▶</button>
+    </div>
+    <div id="seg-queue"></div>
+  </div>
+
+  <!-- TELEPROMPTER VIEW -->
+  <div id="teleprompter-view" class="view">
+    <div id="tp-controls">
+      <button class="tp-btn" id="tp-play-btn" onclick="toggleTeleprompter()">▶ SCROLL</button>
+      <button class="tp-btn" onclick="resetTeleprompter()">↺ RESET</button>
+      <button class="tp-btn" onclick="tpNavSeg(-1)" title="Previous segment (← arrow)">◀ PREV</button>
+      <span id="tp-seg-counter" style="font-family:var(--mono);font-size:12px;color:#555;white-space:nowrap"></span>
+      <button class="tp-btn" onclick="tpNavSeg(1)" title="Next segment (→ arrow)">NEXT ▶</button>
+      <div class="tp-speed-wrap">
+        <span class="tp-speed-label">SPEED</span>
+        <input type="range" id="tp-speed" min="0.2" max="10" step="0.1" value="2.0" oninput="updateSpeedDisplay()"/>
+        <span id="tp-speed-display">2.0</span>
+        <div id="tp-speed-bump">
+          <button class="tp-bump-btn" onclick="nudgeSpeed(0.2)" title="Faster (↑ or scroll up)">▲</button>
+          <button class="tp-bump-btn" onclick="nudgeSpeed(-0.2)" title="Slower (↓ or scroll down)">▼</button>
+        </div>
+      </div>
+      <div id="tp-font-size-wrap">
+        <span class="tp-speed-label">SIZE</span>
+        <input type="range" id="tp-font-size" min="24" max="80" step="2" value="42" oninput="document.getElementById('tp-content').style.fontSize=this.value+'px'"/>
+      </div>
+      <span class="tp-seg-indicator" id="tp-seg-indicator"></span>
+    </div>
+    <div id="tp-scroll-area">
+      <div id="tp-mirror-line"></div>
+      <div id="tp-cursor"></div>
+      <div id="tp-content"></div>
+      <div id="tp-hint">SCROLL WHEEL · speed&nbsp;&nbsp;↑ / ↓ · faster / slower&nbsp;&nbsp;← / → · prev / next segment&nbsp;&nbsp;SPACE · play/pause</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const TYPES = ['PKG','LIVE','VO','SOT','WX','BRK'];
+let segments = [
+  { id:1, slug:'COLD OPEN',        type:'LIVE', dur:30,  note:'Anchors live intro', script:'Good evening, I\'m [ANCHOR]. Tonight on the 6 o\'clock news...' },
+  { id:2, slug:'LEAD STORY — CAMPUS SAFETY', type:'PKG', dur:120, note:'Reporter: Johnson', script:'Students at Ohio State are reacting tonight to new campus safety measures announced by university officials. Reporter Samantha Johnson has more...' },
+  { id:3, slug:'WEATHER TOSS',     type:'WX',   dur:90,  note:'Full forecast', script:'Let\'s send it over to our chief meteorologist for a look at the week ahead...' },
+  { id:4, slug:'SPORTS UPDATE',    type:'SOT',  dur:60,  note:'Buckeyes practice', script:'The Buckeyes were back on the practice field today as they prepare for Saturday\'s game...' },
+  { id:5, slug:'COMMERCIAL BREAK', type:'BRK',  dur:120, note:'', script:'' },
+  { id:6, slug:'FEATURE — LOCAL HERO', type:'VO', dur:90, note:'VO track ready', script:'A Columbus firefighter is being celebrated tonight after rescuing a family from a burning building on the east side...' },
+  { id:7, slug:'CLOSE',            type:'LIVE', dur:30,  note:'Toss to late news', script:'That\'s all for the 6 o\'clock news. Join us again at 11. I\'m [ANCHOR], good night.' },
+];
+let nextId = 8;
+let selectedSegId = null;
+let onAir = false;
+let currentSegIdx = 0;
+let timerRunning = false;
+let timerStart = null;
+let timerElapsed = 0; // ms elapsed in current segment
+let showStart = null;
+let showElapsed = 0;
+let timerInterval = null;
+let tpRunning = false;
+let tpInterval = null;
+let tpScrollPos = 0;
+let tpSegIdx = 0;
+let dragSrcIdx = null;
+
+// ─── RENDER RUNDOWN ──────────────────────────────────────────────────────────
+function render() {
+  const list = document.getElementById('seg-list');
+  if (segments.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div>No segments yet — add one below</div></div>`;
+  } else {
+    list.innerHTML = segments.map((s, i) => renderRow(s, i)).join('');
+  }
+  updateTimingBar();
+  updateTPContent();
+  updateTimerQueue();
+}
+
+function renderRow(s, i) {
+  const front = calcFront(i);
+  const back = calcBack(i);
+  const isSelected = s.id === selectedSegId;
+  const isOnAir = onAir && i === currentSegIdx;
+  const badgeClass = 'badge-' + s.type.toLowerCase();
+  return `<div class="seg-row${isSelected?' selected':''}${isOnAir?' on-air-row':''}"
+    id="row-${s.id}"
+    onclick="selectSeg(${s.id})"
+    draggable="true"
+    ondragstart="dragStart(event,${i})"
+    ondragover="dragOver(event,${i})"
+    ondrop="drop(event,${i})"
+    ondragend="dragEnd(event)">
+    <span class="drag-handle" title="Drag to reorder">⠿</span>
+    <span class="seg-num">${String(i+1).padStart(2,'0')}</span>
+    <span class="seg-slug">
+      <input class="seg-slug-input" value="${escHtml(s.slug)}"
+        onclick="event.stopPropagation()"
+        onchange="updateSeg(${s.id},'slug',this.value)"
+        spellcheck="false"/>
+    </span>
+    <span class="seg-type-badge ${badgeClass}">
+      <select class="type-select" onclick="event.stopPropagation()" onchange="updateSeg(${s.id},'type',this.value)">
+        ${TYPES.map(t=>`<option${t===s.type?' selected':''}>${t}</option>`).join('')}
+      </select>
+    </span>
+    <span class="seg-dur">
+      <input type="text" value="${fmtDurInput(s.dur)}"
+        onclick="event.stopPropagation()"
+        onchange="updateDur(${s.id},this.value)"
+        title="MM:SS"/>
+    </span>
+    <span class="seg-front">${fmtTime(front)}</span>
+    <span class="seg-back">${fmtTime(back)}</span>
+    <span class="seg-note-cell">
+      <span class="seg-note-text">${escHtml(s.note)}</span>
+      <button class="seg-del-btn" onclick="event.stopPropagation(); deleteSegment(${s.id})" title="Delete segment">✕</button>
+    </span>
+  </div>`;
+}
+
+// ─── SEGMENT OPERATIONS ──────────────────────────────────────────────────────
+function addSegment() {
+  segments.push({ id: nextId++, slug: 'NEW SEGMENT', type: 'LIVE', dur: 60, note: '', script: '' });
+  render();
+  // auto-select new
+  selectSeg(nextId - 1);
+  // focus slug input
+  setTimeout(() => {
+    const inp = document.querySelector(`#row-${nextId-1} .seg-slug-input`);
+    if (inp) { inp.focus(); inp.select(); }
+  }, 50);
+}
+
+function deleteSegment(id) {
+  if (segments.length === 1) return; // keep at least one row
+  segments = segments.filter(s => s.id !== id);
+  if (selectedSegId === id) {
+    selectedSegId = null;
+    document.getElementById('script-editor').value = '';
+    document.getElementById('script-seg-name').textContent = '— select a segment —';
+  }
+  render();
+}
+
+
+function updateSeg(id, field, val) {
+  const s = segments.find(s=>s.id===id);
+  if (s) { s[field] = val; render(); selectSeg(id); }
+}
+
+function updateDur(id, val) {
+  const s = segments.find(s=>s.id===id);
+  if (!s) return;
+  // accept MM:SS or plain seconds
+  if (val.includes(':')) {
+    const [m, sec] = val.split(':').map(Number);
+    s.dur = (m||0)*60 + (sec||0);
+  } else {
+    s.dur = parseInt(val)||0;
+  }
+  render();
+}
+
+function selectSeg(id) {
+  // save current script before switching
+  if (selectedSegId) {
+    const prev = segments.find(s=>s.id===selectedSegId);
+    if (prev) prev.script = document.getElementById('script-editor').value;
+  }
+  selectedSegId = id;
+  const s = segments.find(s=>s.id===id);
+  document.getElementById('script-editor').value = s ? s.script : '';
+  document.getElementById('script-seg-name').textContent = s ? s.slug : '— select a segment —';
+  render();
+}
+
+// ─── DRAG AND DROP ───────────────────────────────────────────────────────────
+function dragStart(e, i) { dragSrcIdx = i; e.currentTarget.classList.add('dragging'); }
+function dragOver(e, i) { e.preventDefault(); document.querySelectorAll('.seg-row').forEach(r=>r.classList.remove('drag-over')); if (i !== dragSrcIdx) e.currentTarget.classList.add('drag-over'); }
+function drop(e, i) {
+  e.preventDefault();
+  if (dragSrcIdx === null || dragSrcIdx === i) return;
+  const moved = segments.splice(dragSrcIdx, 1)[0];
+  segments.splice(i, 0, moved);
+  dragSrcIdx = null;
+  render();
+}
+function dragEnd(e) { e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.seg-row').forEach(r=>r.classList.remove('drag-over')); }
+
+// ─── TIMING CALCULATIONS ─────────────────────────────────────────────────────
+function calcFront(i) { return segments.slice(0, i).reduce((a, s) => a + s.dur, 0); }
+function calcBack(i) {
+  const total = segments.reduce((a,s)=>a+s.dur,0);
+  const front = calcFront(i);
+  return total - front - segments[i].dur;
+}
+function totalDur() { return segments.reduce((a,s)=>a+s.dur,0); }
+
+function fmtTime(secs) {
+  const s = Math.abs(Math.round(secs));
+  const m = Math.floor(s/60), ss = s%60;
+  return (secs<0?'-':'') + m + ':' + String(ss).padStart(2,'0');
+}
+function fmtDurInput(secs) {
+  const m = Math.floor(secs/60), s = secs%60;
+  return m + ':' + String(s).padStart(2,'0');
+}
+function escHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── TIMING BAR ──────────────────────────────────────────────────────────────
+function updateTimingBar() {
+  const total = totalDur();
+  const remaining = total - showElapsed/1000;
+  const planned = document.getElementById('tb-planned');
+  const rem = document.getElementById('tb-remaining');
+  const elapsed = document.getElementById('tb-show-elapsed');
+  planned.textContent = fmtTime(total);
+  elapsed.textContent = fmtTime(showElapsed/1000);
+  rem.textContent = fmtTime(remaining);
+  rem.className = 'time-val' + (remaining < 0 ? ' over' : '');
+  document.getElementById('progress-bar').style.width = Math.min(100, (showElapsed/1000/total)*100) + '%';
+  // clock
+  const now = new Date();
+  document.getElementById('tb-clock').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
+  // current seg
+  if (onAir && segments[currentSegIdx]) {
+    document.getElementById('tb-seg').textContent = segments[currentSegIdx].slug;
+  } else {
+    document.getElementById('tb-seg').textContent = '—';
+  }
+}
+
+// clock tick every second
+setInterval(() => { updateTimingBar(); }, 1000);
+
+// ─── ON AIR / SHOW ───────────────────────────────────────────────────────────
+function toggleOnAir() {
+  onAir = !onAir;
+  const btn = document.getElementById('on-air-btn');
+  btn.textContent = onAir ? '■ OFF AIR' : '● ON AIR';
+  btn.classList.toggle('live', onAir);
+  if (onAir) {
+    showStart = Date.now() - showElapsed;
+    timerStart = Date.now() - timerElapsed;
+    timerRunning = true;
+    startTimerInterval();
+  } else {
+    timerRunning = false;
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  render();
+}
+
+// ─── SEGMENT TIMER ───────────────────────────────────────────────────────────
+function toggleTimer() {
+  timerRunning = !timerRunning;
+  const btn = document.getElementById('timer-play-btn');
+  if (timerRunning) {
+    if (!onAir) { onAir = true; document.getElementById('on-air-btn').textContent='■ OFF AIR'; document.getElementById('on-air-btn').classList.add('live'); }
+    timerStart = Date.now() - timerElapsed;
+    if (!showStart) showStart = Date.now() - showElapsed;
+    btn.textContent = '⏸ PAUSE';
+    startTimerInterval();
+  } else {
+    btn.textContent = '▶ RESUME';
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function startTimerInterval() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timerElapsed = Date.now() - timerStart;
+    showElapsed = Date.now() - showStart;
+    const seg = segments[currentSegIdx];
+    if (!seg) return;
+    const segDurMs = seg.dur * 1000;
+    const elapsed = timerElapsed;
+    const remaining = segDurMs - elapsed;
+    const clock = document.getElementById('big-clock');
+    const over = remaining < 0;
+    clock.textContent = fmtTime(over ? remaining/1000 : remaining/1000);
+    clock.className = over ? 'over' : '';
+    // seg progress
+    const pct = Math.min(100, (elapsed/segDurMs)*100);
+    document.getElementById('seg-progress-bar').style.width = pct+'%';
+    updateTimingBar();
+    // auto advance
+    if (timerRunning && elapsed >= segDurMs + 3000) nextSeg();
+  }, 100);
+}
+
+function nextSeg() {
+  if (currentSegIdx < segments.length - 1) {
+    currentSegIdx++;
+    timerElapsed = 0;
+    timerStart = Date.now();
+    updateTimerQueue();
+    render();
+  }
+}
+function prevSeg() {
+  if (currentSegIdx > 0) {
+    currentSegIdx--;
+    timerElapsed = 0;
+    timerStart = Date.now();
+    updateTimerQueue();
+    render();
+  }
+}
+
+function updateTimerQueue() {
+  const wrap = document.getElementById('seg-queue');
+  const seg = segments[currentSegIdx];
+  document.getElementById('current-seg-name').textContent = seg ? seg.slug : '—';
+  const upcoming = segments.slice(currentSegIdx + 1, currentSegIdx + 4);
+  wrap.innerHTML = upcoming.map((s, i) => `
+    <div class="queue-item${i===0?' next':''}">
+      <span class="q-num">${String(currentSegIdx + i + 2).padStart(2,'0')}</span>
+      <span class="q-slug">${escHtml(s.slug)}</span>
+      <span class="q-dur">${fmtDurInput(s.dur)}</span>
+    </div>`).join('');
+}
+
+// ─── TELEPROMPTER ─────────────────────────────────────────────────────────────
+function getScriptedSegs() {
+  return segments.filter(s => s.script && s.script.trim().length > 0);
+}
+
+function updateTPContent() {
+  const scripted = getScriptedSegs();
+  const content = document.getElementById('tp-content');
+  const counter = document.getElementById('tp-seg-counter');
+
+  if (scripted.length === 0) {
+    content.innerHTML = '<span style="color:#333;font-size:.5em;font-family:monospace">No scripts written yet — add scripts in the Rundown tab</span>';
+    counter.textContent = '';
+    return;
+  }
+
+  // Render ALL scripted segments continuously, each with a data-seg-idx attribute
+  content.innerHTML = scripted.map((s, i) =>
+    `<div class="tp-seg-block" data-seg-idx="${i}"><span class="tp-seg-title">${escHtml(s.slug)}</span>${escHtml(s.script)}</div>`
+  ).join('');
+
+  counter.textContent = `1 / ${scripted.length}  ·  ${escHtml(scripted[0].slug)}`;
+}
+
+function tpNavSeg(dir) {
+  const scripted = getScriptedSegs();
+  if (scripted.length === 0) return;
+  tpSegIdx = Math.max(0, Math.min(scripted.length - 1, tpSegIdx + dir));
+  // scroll to that segment block
+  const block = document.querySelector(`.tp-seg-block[data-seg-idx="${tpSegIdx}"]`);
+  if (block) {
+    tpScrollPos = block.offsetTop - 80;
+    document.getElementById('tp-scroll-area').scrollTop = tpScrollPos;
+  }
+  updateTPCounter();
+}
+
+function updateTPCounter() {
+  const scripted = getScriptedSegs();
+  if (!scripted.length) return;
+  const counter = document.getElementById('tp-seg-counter');
+  counter.textContent = `${tpSegIdx + 1} / ${scripted.length}  ·  ${escHtml(scripted[tpSegIdx].slug)}`;
+}
+
+function toggleTeleprompter() {
+  tpRunning = !tpRunning;
+  const btn = document.getElementById('tp-play-btn');
+  if (tpRunning) {
+    btn.textContent = '⏸ PAUSE'; btn.classList.add('running');
+    tpInterval = setInterval(scrollTP, 30);
+  } else {
+    btn.textContent = '▶ SCROLL'; btn.classList.remove('running');
+    clearInterval(tpInterval);
+  }
+}
+
+function scrollTP() {
+  const area = document.getElementById('tp-scroll-area');
+  const speed = parseFloat(document.getElementById('tp-speed').value);
+  tpScrollPos += speed * 0.8;
+  area.scrollTop = tpScrollPos;
+
+  // update which segment is at the read-line (mid-screen)
+  const readLine = area.scrollTop + area.clientHeight * 0.45;
+  const blocks = document.querySelectorAll('.tp-seg-block');
+  blocks.forEach((block, i) => {
+    if (block.offsetTop <= readLine) tpSegIdx = i;
+  });
+  updateTPCounter();
+
+  // stop at end
+  if (area.scrollTop + area.clientHeight >= area.scrollHeight - 10) {
+    tpRunning = false;
+    clearInterval(tpInterval);
+    document.getElementById('tp-play-btn').textContent = '▶ SCROLL';
+    document.getElementById('tp-play-btn').classList.remove('running');
+  }
+}
+
+function resetTeleprompter() {
+  tpRunning = false; clearInterval(tpInterval);
+  tpScrollPos = 0;
+  tpSegIdx = 0;
+  document.getElementById('tp-scroll-area').scrollTop = 0;
+  document.getElementById('tp-play-btn').textContent = '▶ SCROLL';
+  document.getElementById('tp-play-btn').classList.remove('running');
+  updateTPCounter();
+}
+
+function nudgeSpeed(delta) {
+  const slider = document.getElementById('tp-speed');
+  const newVal = Math.min(10, Math.max(0.2, parseFloat(slider.value) + delta));
+  slider.value = newVal.toFixed(1);
+  updateSpeedDisplay();
+}
+
+function updateSpeedDisplay() {
+  const val = parseFloat(document.getElementById('tp-speed').value).toFixed(1);
+  document.getElementById('tp-speed-display').textContent = val;
+}
+
+// Mouse wheel speed control on teleprompter scroll area
+document.addEventListener('DOMContentLoaded', () => {
+  const area = document.getElementById('tp-scroll-area');
+  area.addEventListener('wheel', e => {
+    const tpView = document.getElementById('teleprompter-view');
+    if (!tpView.classList.contains('active')) return;
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.2 : -0.2;
+    nudgeSpeed(delta);
+  }, { passive: false });
+});
+
+// ─── VIEWS ───────────────────────────────────────────────────────────────────
+function switchView(name) {
+  if (selectedSegId) {
+    const s = segments.find(s=>s.id===selectedSegId);
+    if (s) s.script = document.getElementById('script-editor').value;
+  }
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(name+'-view').classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'teleprompter') updateTPContent();
+  if (name === 'timer') updateTimerQueue();
+}
+
+// ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
+  const tpActive = document.getElementById('teleprompter-view').classList.contains('active');
+  const timerActive = document.getElementById('timer-view').classList.contains('active');
+
+  if (e.code === 'Space' && !inInput) {
+    e.preventDefault();
+    if (timerActive) toggleTimer();
+    if (tpActive) toggleTeleprompter();
+  }
+
+  if (tpActive && !inInput) {
+    if (e.key === 'ArrowUp')    { e.preventDefault(); nudgeSpeed(0.2); }
+    if (e.key === 'ArrowDown')  { e.preventDefault(); nudgeSpeed(-0.2); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); tpNavSeg(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); tpNavSeg(1); }
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); nudgeSpeed(0.2); }
+    if (e.key === '-')                  { e.preventDefault(); nudgeSpeed(-0.2); }
+  }
+
+  if (e.key === 'F1') { e.preventDefault(); document.querySelectorAll('.nav-btn')[0].click(); }
+  if (e.key === 'F2') { e.preventDefault(); document.querySelectorAll('.nav-btn')[1].click(); }
+  if (e.key === 'F3') { e.preventDefault(); document.querySelectorAll('.nav-btn')[2].click(); }
+});
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+render();
+updateTimerQueue();
+</script>
+</body>
+</html>
